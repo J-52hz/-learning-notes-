@@ -274,14 +274,97 @@ export default configureStore({
 -   自动添加更多 middleware 来检查常见错误，例如意外改变（mutate）state
 -   自动设置 Redux DevTools 扩展连接
 
-#### 3、使用Provider
+#### 3、Provider派发
 Provider的使用没有变化,作为store的分发器包裹根组件：
 ```jsx
  <Provider store={store}>
     <App />
   </Provider>
 ```
-#### 4、使用异步方法
+#### 4、使用案例
+```js
+import { useSelector, useDispatch } from 'react-redux'
+
+import { increment } from '../../store/feature/countSlice'
+
+function CountNumber(props: any) {
+  const { count } = useSelector((state: any) => state.counter)
+  const dispatch = useDispatch()
+
+  const add = () => {
+    dispatch(increment({ step: 1 }))
+  }
+  return (
+    <div className="App">
+      <div>当前计数总和为：{count}</div>
+      <br />
+      <button onClick={add}>+1</button>
+    </div>
+  )
+}
+
+export default CountNumber
+```
+
+#### 4、创建异步方法
 `createAsyncThunk` 接收两个参数：
 -   一个字符串，用作生成的 action types 的前缀
 -   一个 payload creator 回调函数，应该返回一个 `Promise`。这通常使用 `async/await` 语法编写，因为 `async` 函数会自动返回一个 Promise。
+```js
+//personSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+
+const initialState = {
+  articleList: [],
+}
+
+const getArticleListAPI = () =>
+  fetch('localhost:9002/api/article/getRecentArticle').then((res) => {
+    res.json()
+  })
+
+export const getArticleList = createAsyncThunk(
+  'person/getArticle',
+  async () => {
+    const res = await getArticleListAPI()
+    return res
+  }
+)
+
+const personSlice = createSlice({
+  name: 'person',
+  initialState,
+  reducers: {
+  },
+  extraReducers: {
+    [getArticleList.fulfilled as any](state, { payload }) {
+      state.articleList = payload.data.list
+    },
+  },
+})
+export default personSlice.reducer
+```
+
+#### 5、使用异步方法
+```jsx
+
+import { useEffect, useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { getArticleList } from '../../store/feature/personSlice'
+
+const Person = () => {
+  const dispatch = useDispatch()
+  
+  useEffect(() => {
+    dispatch(getArticleList())
+  }, [])
+  return <></>
+}
+
+export default Person
+```
+
+
+### 参考
+- [一篇文章总结redux、react-redux、redux-saga](https://juejin.cn/post/6844903846666321934)
+- [Redux 中文官网](https://cn.redux.js.org/)
