@@ -104,7 +104,7 @@ export default CountNumber
 //index.jsx
 import store from './store'
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
+const root = ReactDOM.createRoot(document.getElementById('root'))
 
 root.render(
   <React.StrictMode>
@@ -215,3 +215,73 @@ state {
 因此在使用的时候要注意state的层级。
 
 ### Redux Toolkit（redux最佳实践）
+RTK是目前Redux官方推荐的的使用redux方式。
+
+#### 1、创建slice
+`createSlice` 接收一个包含三个主要选项字段的对象：
+-   `name`：一个字符串，将用作生成的 action types 的前缀
+-   `initialState`：reducer 的初始 state
+-   `reducers`：一个对象，其中键是字符串，值是处理特定 actions 的 “case reducer” 函数
+```js
+//couterSlice.js
+
+import { createSlice } from '@reduxjs/toolkit'
+export const counterSlice = createSlice({
+  name: 'counter',
+  initialState: {
+    count: 111,
+    title: 'use RTK',
+  },
+
+  reducers: {
+    increment: (state, action) => {
+      state.count = state.count + action.payload.step
+    },
+  },
+})
+
+export const { increment } = counterSlice.actions
+export default counterSlice.reducer
+```
+
+在此示例中可以看到几件事：
+-   我们在 `reducers` 对象中编写 case reducer 函数，并赋予它们高可读性的名称
+-   **`createSlice` 会自动生成对应于每个 case reducer 函数的 action creators**
+-   createSlice 在默认情况下自动返回现有 state
+-   **`createSlice` 允许我们安全地“改变”（mutate）state！**
+
+#### 2、创建store
+**Redux Toolkit 的 `configureStore` API，可简化 store 的设置过程**。`configureStore` 包裹了 Redux 核心 `createStore` API，并自动为我们处理大部分 store 设置逻辑。事实上，我们可以有效地将其缩减为一步：
+```js
+//index.js
+
+import { configureStore } from '@reduxjs/toolkit'
+import counterReducer from './feature/countSlice'
+import personReducer from './feature/personSlice'
+
+export default configureStore({
+  reducer: {
+    counter: counterReducer,
+    person: personReducer,
+  },
+})
+```
+
+`configureStore` 为我们完成了所有工作：
+-   将 `counterReducer` 和 `personReducer` 组合到根 reducer 函数中，并作为 `{counter, person}` 的根 state
+-   使用根 reducer 创建了 Redux store
+-   自动添加了 “thunk” middleware
+-   自动添加更多 middleware 来检查常见错误，例如意外改变（mutate）state
+-   自动设置 Redux DevTools 扩展连接
+
+#### 3、使用Provider
+Provider的使用没有变化,作为store的分发器包裹根组件：
+```jsx
+ <Provider store={store}>
+    <App />
+  </Provider>
+```
+#### 4、使用异步方法
+`createAsyncThunk` 接收两个参数：
+-   一个字符串，用作生成的 action types 的前缀
+-   一个 payload creator 回调函数，应该返回一个 `Promise`。这通常使用 `async/await` 语法编写，因为 `async` 函数会自动返回一个 Promise。
